@@ -31,7 +31,7 @@ async fn main() {
         input_data = Some(data);
     }
 
-    let solution = solutions::solver::solve_for_day(args.day, input_data, args.adv);
+    let solution = solutions::solve_for_day(args.day, input_data, args.adv);
 
     println!("Solution: {}", solution);
 }
