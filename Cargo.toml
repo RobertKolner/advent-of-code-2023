@@ -12,3 +12,4 @@ hyper = "0.14.23"
 regex = "1.10.2"
 reqwest = { version = "0.11.13", features = ["cookies"] }
 tokio = { version = "1.34.0", features = ["full"] }
+num-integer = "0.1.45"
