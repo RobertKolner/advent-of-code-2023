@@ -1,4 +1,4 @@
-use std::cmp;
+use std::collections::{HashSet, VecDeque};
 
 const EXAMPLE: &str = "-L|F7
 7S-7|
@@ -73,14 +73,9 @@ pub fn solve(input_data: Option<String>, _advanced: bool) -> String {
     let map: Map = data.trim().lines().map(|line| line.chars().map(Tile::parse).collect()).collect();
     let starting_position = find_start(&map).unwrap();
 
-    let loop_path = find_loop(&map, &vec![], starting_position).unwrap();
-    let loop_length = loop_path.len() - 1;
-    let distances: Vec<usize> = loop_path.iter().enumerate().map(|(i, _)| cmp::min(i, loop_length - i)).collect();
-
-    println!("Loop path: {:?}", loop_path);
-    println!("Loop length: {:?}", loop_path.len());
-    let max_distance: usize = distances.into_iter().max().unwrap();
-    format!("{}", max_distance)
+    let loop_distances = find_loop_iter(&map, starting_position).unwrap();
+    let max_distance: u32 = *loop_distances.iter().map(|r| r.iter().max().unwrap()).max().unwrap();
+    format!("{}", ((max_distance + 1) as f64 / 2.0).ceil() as u32)
 }
 
 fn find_start(map: &Map) -> Option<(usize, usize)> {
@@ -109,44 +104,54 @@ fn map_tile_with_vector(map: &Map, tile_index: (usize, usize), vector: (i32, i32
     Some((new_tile_index.0 as usize, new_tile_index.1 as usize))
 }
 
-fn find_loop(map: &Map, current_path: &Vec<(usize, usize)>, tile_index: (usize, usize)) -> Option<Vec<(usize, usize)>> {
-    find_loop_rec(map, current_path, None, tile_index)
-}
+fn find_loop_iter(map: &Map, starting_tile_index: (usize, usize)) -> Option<Vec<Vec<u32>>> {
+    let mut distance_map = vec![vec![0u32; map[0].len()]; map.len()];
 
-fn find_loop_rec(map: &Map, current_path: &Vec<(usize, usize)>, previous_tile: Option<(usize, usize)>, tile_index: (usize, usize)) -> Option<Vec<(usize, usize)>> {
-    let mut next_current_path = current_path.clone();
-    next_current_path.push(tile_index);
+    let mut last_tile_index: Option<(usize, usize)> = None;
+    let mut visited_tiles = HashSet::<(usize, usize)>::new();
+    let mut queue = VecDeque::<(usize, usize)>::new();
+    visited_tiles.insert(starting_tile_index);
+    queue.push_back(starting_tile_index);
 
-    // The path is complete.
-    if current_path.len() > 2 && tile_index == current_path[0] {
-        return Some(next_current_path);
-    }
+    while !queue.is_empty() {
+        let current_tile_index = queue.pop_front().unwrap();
+        let current_tile = map_tile(map, current_tile_index);
+        let current_distance = distance_map[current_tile_index.0][current_tile_index.1];
 
-    // The path is invalid.
-    if current_path.iter().rev().any(|i| *i == tile_index) {
-        return None;
-    }
+        let neighbor_directions = current_tile.valid_neighbors_directions();
+        let neighbor_vectors: Vec<(i32, i32)> = neighbor_directions.iter().map(|d| d.vector()).collect();
+        let neighbor_indices: Vec<(usize, usize)> = neighbor_vectors
+            .iter()
+            .map(|v| map_tile_with_vector(map, current_tile_index, *v)).
+            filter_map(|i| i)
+            .collect();
 
-    let next_tile = map_tile(map, tile_index);
-    let valid_neighbors_directions = next_tile.valid_neighbors_directions();
-    let valid_neighbors_diffs: Vec<(i32, i32)> = valid_neighbors_directions
-        .iter()
-        .map(|d| d.vector())
-        .collect();
-    let valid_neighbors: Vec<(usize, usize)> = valid_neighbors_diffs
-        .iter()
-        .map(|diff| map_tile_with_vector(map, tile_index, *diff))
-        .filter_map(|d| d)
-        .collect();
-
-    if previous_tile.is_some() && !valid_neighbors.contains(&previous_tile?) {
-        return None;
-    }
-    for neighbor in valid_neighbors {
-        let valid_path = find_loop_rec(map, &next_current_path, Some(tile_index), neighbor);
-        if valid_path.is_some() {
-            return valid_path;
+        // Invalid connection
+        if last_tile_index.is_some() && !neighbor_indices.contains(&last_tile_index?) {
+            continue;
         }
+
+        // Are we finished?
+        if current_distance > 1 && neighbor_indices.iter().any(|n| starting_tile_index == *n) {
+            return Some(distance_map);
+        }
+
+        // If not, filter out all other already visited tiles
+        let unvisited_neighbors: Vec<(usize, usize)> = neighbor_indices
+            .iter()
+            .filter(|i| !visited_tiles.contains(*i))
+            .map(|i| *i)
+            .collect();
+
+        // At this point we only have valid neighbors
+        visited_tiles.insert(current_tile_index);
+        for neighbor_index in unvisited_neighbors {
+            distance_map[neighbor_index.0][neighbor_index.1] = current_distance + 1;
+            queue.push_back(neighbor_index);
+        }
+
+        last_tile_index = Some(current_tile_index);
     }
-    return None;
+
+    return None
 }
