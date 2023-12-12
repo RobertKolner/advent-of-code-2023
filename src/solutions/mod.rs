@@ -9,6 +9,7 @@ mod day08;
 mod day09;
 mod day10;
 mod day11;
+mod day12;
 
 pub fn solve_for_day(day: u8, data: Option<String>, advanced: bool) -> String {
     match day {
@@ -23,6 +24,7 @@ pub fn solve_for_day(day: u8, data: Option<String>, advanced: bool) -> String {
         9 => day09::solve(data, advanced),
         10 => day10::solve(data, advanced),
         11 => day11::solve(data, advanced),
+        12 => day12::solve(data, advanced),
         _ => "Unknown day".to_string(),
     }
 }
