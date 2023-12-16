@@ -13,6 +13,7 @@ mod day12;
 mod day13;
 mod day14;
 mod day15;
+mod day16;
 
 pub fn solve_for_day(day: u8, data: Option<String>, advanced: bool) -> String {
     match day {
@@ -31,6 +32,7 @@ pub fn solve_for_day(day: u8, data: Option<String>, advanced: bool) -> String {
         13 => day13::solve(data, advanced),
         14 => day14::solve(data, advanced),
         15 => day15::solve(data, advanced),
+        16 => day16::solve(data, advanced),
         _ => "Unknown day".to_string(),
     }
 }
