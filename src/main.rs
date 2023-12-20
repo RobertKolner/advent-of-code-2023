@@ -1,3 +1,5 @@
+extern crate core;
+
 use clap::Parser;
 use dotenv;
 use tokio;
